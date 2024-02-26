@@ -18,6 +18,11 @@ enum SendStatus {
 
 class ArgDevice {
 public:
+  //Does not log errors by default.
+  ArgDevice() : ArgDevice(false) {}
+  //Set whether logs are sent through the computer port to be seen in the serial monitor.
+  ArgDevice(bool logging);
+
   //Uses Serial1 for sending and receiving
   void begin();
   //Uses &serial for sending and receiving
@@ -31,5 +36,5 @@ public:
 
 private:
   HardwareSerial *send, *recv;
-  bool status = D_IDLE;
+  bool status = D_IDLE, logging;
 };

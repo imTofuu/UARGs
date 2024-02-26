@@ -1,6 +1,10 @@
 #include "ArgDevice.hpp"
 #include <Arduino.h>
 
+ArgDevice::ArgDevice(bool logging) {
+  ArgDevice::logging = logging;
+}
+
 void ArgDevice::begin() {
   ArgDevice::begin(&Serial);
 }
@@ -11,18 +15,29 @@ void ArgDevice::begin(HardwareSerial *serial) {
 
 void ArgDevice::begin(HardwareSerial *send, HardwareSerial *recv) {
   ArgDevice::send = send; ArgDevice::recv = recv;
+  if(ArgDevice::logging) {
+    Serial.begin(115200);
+  }
   send->begin(115200);
   recv->begin(115200);
+  send->setTimeout(10000);
+  recv->setTimeout(10000);
   ArgDevice::status = D_BEGUN;
 }
 
 SendStatus ArgDevice::sendArgs(String s) {
   ArgDevice::send->flush();
-  ArgDevice::send->print('STX');
-  ArgDevice::send->print(s);
-  ArgDevice::send->println('EOT');
+  ArgDevice::send->println(String('STX') += s += String('EOT'));
+  int c = 0;
   while(!(ArgDevice::recv->available() && ArgDevice::recv->find('ACK'))) {
     delay(10);
+    c++;
+    if(c >= 200) {
+      if(ArgDevice::logging) {
+        Serial.println("No response recieved in 2 seconds.");
+      }
+      break;
+    }
   }
   ArgDevice::send->flush();
   ArgDevice::recv->flush();
@@ -31,7 +46,6 @@ SendStatus ArgDevice::sendArgs(String s) {
 
 
 Args* ArgDevice::receiveArgs() {
-  Serial.println(ArgDevice::recv->peek());
   if(ArgDevice::recv->available() && ArgDevice::recv->find('STX')) {
     Serial.println(1);
     ArgDevice::recv->read();
@@ -48,7 +62,7 @@ Args* ArgDevice::receiveArgs() {
       }
     }
     ArgDevice::recv->flush();
-    ArgDevice::send->write('ACK');
+    ArgDevice::send->println('ACK');
     return args;
   }
   return nullptr;
