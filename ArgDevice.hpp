@@ -1,9 +1,7 @@
 #include <Arduino.h>
-#include "Args.hpp"
-
-#define startOfTransmission 'STX'
-#define endOfTransmission 'EOT'
-#define acknowledge 'ACK'
+#define startOfTransmission (char)2
+#define endOfTransmission (char)4
+#define acknowledge (char)6
 
 enum DeviceStatus {
   D_IDLE,
@@ -14,6 +12,16 @@ enum DeviceStatus {
 enum SendStatus {
   AD_OK = 1,
   AD_ERR = 0
+};
+
+struct Arg {
+  String v;
+};
+
+struct Args {
+  String command;
+  Arg* args;
+  uint16_t amount;
 };
 
 class ArgDevice {
@@ -32,9 +40,15 @@ public:
 
   SendStatus sendArgs(String s);
   Args* receiveArgs();
+
+  void addArg(Args *args, String string);
+
+  void logItem(String s);
+
+
   
 
 private:
   HardwareSerial *send, *recv;
-  bool status = D_IDLE, logging;
+  bool logging;
 };
