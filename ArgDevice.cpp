@@ -2,85 +2,145 @@
 #include <Arduino.h>
 #include <string.h>
 
+// TODO:
+/*
+* Checksum
+* Check for buffer overflow
+*/
+
 ArgDevice::ArgDevice(bool logging) {
-  ArgDevice::logging = logging;
+  logging = logging;
 }
 
 void ArgDevice::begin() {
-  ArgDevice::begin(&Serial);
+  begin(&Serial);
 }
 void ArgDevice::begin(HardwareSerial *serial) {
-  ArgDevice::begin(serial, serial);
+  begin(serial, serial);
 }
 void ArgDevice::begin(HardwareSerial *send, HardwareSerial *recv) {
-  ArgDevice::send = send; ArgDevice::recv = recv;
-  if(ArgDevice::logging) {
-    Serial.begin(115200);
+  this->send = send; this->recv = recv;
+
+  if(logging) {
+    Serial1.begin(115200);
   }
   send->begin(115200);
   recv->begin(115200);
 }
 
 void ArgDevice::logItem(String s) {
-  if(ArgDevice::logging) {
-    Serial.println(s);
+  if(logging) {
+    Serial1.println(s);
   }
 }
 
 SendStatus ArgDevice::sendArgs(String s) {
   SendStatus ret = AD_OK;
-  ArgDevice::send->flush();
-  ArgDevice::send->println(String(startOfTransmission) += String(' ') += s += String(endOfTransmission));
+  send->flush();
+  send->println(String(startOfTransmission) += s += String(endOfTransmission));
   int c = 0;
-  ArgDevice::recv->setTimeout(10000);
-  while(!(ArgDevice::recv->available() && ArgDevice::recv->find(acknowledge))) {
+  recv->setTimeout(10000);
+  while(!(recv->available() && recv->find(acknowledge))) {
     delay(10);
     c++;
     if(c >= 500) {
-      ArgDevice::logItem("No response recieved in 5 seconds.");
+      logItem("No response recieved in 5 seconds.");
       ret = AD_ERR;
       break;
     }
   }
-  ArgDevice::send->flush();
-  ArgDevice::recv->flush();
+  send->flush();
+  recv->flush();
   return ret;
 }
 
-Args* ArgDevice::receiveArgs() {
-  ArgDevice::recv->setTimeout(50);
-  if(ArgDevice::recv->available() && ArgDevice::recv->find(endOfTransmission)) {
-    ArgDevice::logItem("Found args to recieve");
-    ArgDevice::recv->readStringUntil(' ');
-    ArgDevice::recv->read();
-    Args *args = (Args*)malloc(sizeof(Args)));
-    const char* command = ArgDevice::recv->readStringUntil(' ').c_str();
-    args->command = *(new String(command));
+String ArgDevice::getBuffer(String buffer) {
+  if(recv->available()) {
+    String newBuffer = buffer += recv->readString();
+    return newBuffer;
+  }
+  return buffer;
+}
+
+String buffer = "";
+Args ArgDevice::receiveArgs() {
+  logItem("recieveargs");
+  recv->setTimeout(50);
+  logItem("Checking for message...");
+  if((recv->available() && recv->peek() == startOfTransmission)) {
+    logItem("Message recieved");
+
+    String trueBuffer = "";
+    while(buffer.charAt(buffer.length() - 3) != endOfTransmission) {
+      String newBuffer = getBuffer(buffer);
+      buffer = newBuffer;
+    }
+
+    logItem("Message recieved.");
+    Args args;
+
+    logItem("Getting command...");
+    int lastEnd = findFrom(' ', 0, buffer);
+    String command = readChunk(buffer, 1, lastEnd);
+    logItem("Saving command...");
+    args.command = command;
+
+
+    logItem("Getting arguments.");
     while(true) {
-      String arg;
-      if(ArgDevice::recv->find(' ')) {
-        arg = ArgDevice::recv->readStringUntil(' ');
-        ArgDevice::addArg(args, arg);
+      int currentEnd = findFrom(' ', lastEnd + 1, buffer);
+      if(currentEnd > 0) {
+        logItem("Found argument.");
+        logItem("Reading argument...");
+        String arg = readChunk(buffer, lastEnd + 1, currentEnd);
+        logItem("Adding argument...");
+        addArg(&args, arg);
+        logItem("Added argument.");
       } else {
-        arg = ArgDevice::recv->readStringUntil(endOfTransmission);
-        ArgDevice::addArg(args, arg);
+        logItem("Found last argument.");
+        logItem("Reading argument...");
+        String arg = readChunk(buffer, lastEnd + 1, buffer.length() - 3);
+        logItem("Adding argument...");
+        addArg(&args, arg);
+        logItem("Added argument");
         break;
       }
+      lastEnd = currentEnd;
     }
-    Serial.println("here");
-    ArgDevice::recv->println(acknowledge);
-    Serial.println("returning");
+    recv->println(acknowledge);
+    buffer = "";
     return args;
   }
-  return nullptr;
+  return NULLARGS;
 }
 
 void ArgDevice::addArg(Args *args, String string) {
-  Arg* temp = (Arg*)malloc(sizeof(Arg) * args->amount + 1);
-  Arg* newMem = (Arg*)memmove(temp, args->args, sizeof(Arg) * args->amount);
+  logItem("Creating new array...");
+  Arg* newMemory = new Arg[args->amount + 1];
+  logItem("Copying old memory...");
+  memcpy(newMemory, args->args, sizeof(Arg) * args->amount);
+  newMemory[args->amount].v = string;
+  logItem("Freeing old memory...");
   free(args->args);
-  newMem[args->amount].v = string;
 
-  args->args = newMem;
+  args->args = newMemory;
   args->amount++;
+}
+
+Arg ArgDevice::getArg(Args *args, int index) {
+  if(index >= 0 && index < args->amount) {
+    return args->args[index];
+  }
+  return NULLARGS.args[0];
+}
+
+int ArgDevice::findFrom(char character, int start, String string) {
+  for(int i = start; i < string.length(); i++) {
+    if(string[i] == character) return i;
+  }
+  return -1;
+}
+
+String ArgDevice::readChunk(String string, int start, int end) {
+  return string.substring(start, end);
 }

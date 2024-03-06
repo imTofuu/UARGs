@@ -31,6 +31,8 @@ public:
   //Set whether logs are sent through the computer port to be seen in the serial monitor.
   ArgDevice(bool logging);
 
+  const Args NULLARGS = {"", nullptr, 0};
+
   //Uses Serial1 for sending and receiving
   void begin();
   //Uses &serial for sending and receiving
@@ -39,16 +41,19 @@ public:
   void begin(HardwareSerial *send, HardwareSerial *recv);
 
   SendStatus sendArgs(String s);
-  Args* receiveArgs();
+  Args receiveArgs();
 
   void addArg(Args *args, String string);
+  Arg getArg(Args *args, int index);
 
   void logItem(String s);
-
-
   
 
 private:
   HardwareSerial *send, *recv;
   bool logging;
+
+  int findFrom(char character, int start, String string);
+  String readChunk(String string, int start, int end);
+  String getBuffer(String buffer);
 };
