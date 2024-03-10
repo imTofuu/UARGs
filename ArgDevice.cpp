@@ -54,7 +54,7 @@ SendStatus ArgDevice::sendArgs(String s) {
   return ret;
 }
 
-String ArgDevice::getBuffer(String buffer) {
+inline String ArgDevice::getBuffer(String buffer) {
   if(recv->available()) {
     String newBuffer = buffer += recv->readString();
     return newBuffer;
