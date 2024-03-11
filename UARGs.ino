@@ -4,10 +4,10 @@ ArgDevice device(true);
 
 void setup() {
 
-  device.begin(&Serial2);
+  device.begin();
 
-  /*delay(1000);
-  device.sendArgs("command arg arg2");*/
+  //delay(1000);
+  //device.sendArgs("command arg arg2");
 }
 void loop() {
 

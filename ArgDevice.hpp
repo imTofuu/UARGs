@@ -31,7 +31,7 @@ public:
   //Set whether logs are sent through the computer port to be seen in the serial monitor.
   ArgDevice(bool logging);
 
-  const Args NULLARGS = {"", nullptr, 0};
+  const Args NULLARGS;
 
   //Uses Serial1 for sending and receiving
   void begin();

@@ -9,11 +9,23 @@
 */
 
 ArgDevice::ArgDevice(bool logging) {
-  logging = logging;
+  this->logging = logging;
+
+  Args args;
+
+  args.command = "NULLCOMMAND";
+
+  Arg* arg = new Arg[1];
+  arg[0].v = "NULLARG";
+  args.args = arg;
+
+  args.amount = 0;
+
+  this->NULLARGS = args;
 }
 
 void ArgDevice::begin() {
-  begin(&Serial);
+  begin((HardwareSerial*)&Serial);
 }
 void ArgDevice::begin(HardwareSerial *serial) {
   begin(serial, serial);
@@ -22,15 +34,15 @@ void ArgDevice::begin(HardwareSerial *send, HardwareSerial *recv) {
   this->send = send; this->recv = recv;
 
   if(logging) {
-    Serial1.begin(115200);
+    Serial.begin(115200);
   }
   send->begin(115200);
   recv->begin(115200);
 }
 
-void ArgDevice::logItem(String s) {
+inline void ArgDevice::logItem(String s) {
   if(logging) {
-    Serial1.println(s);
+    Serial.println(s);
   }
 }
 
@@ -64,9 +76,6 @@ inline String ArgDevice::getBuffer(String buffer) {
 
 String buffer = "";
 Args ArgDevice::receiveArgs() {
-  logItem("recieveargs");
-  recv->setTimeout(50);
-  logItem("Checking for message...");
   if((recv->available() && recv->peek() == startOfTransmission)) {
     logItem("Message recieved");
 
