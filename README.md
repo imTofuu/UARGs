@@ -114,4 +114,4 @@ Once a message is received, the data can be gotten from the `Args` object.
     ```c++
     String argument = device.getArg(&args, index).v;
     ```
-    `index` is the index of argument you are getting. Uses 0 based indexing. `v` **is required to get the string value of the arg, otherwise it is a struct.**
+    `index` is the index of argument you are getting. Uses 0 based indexing. `.v` **is required to get the string value of the arg, otherwise it is a struct.**
