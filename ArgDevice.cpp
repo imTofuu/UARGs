@@ -10,18 +10,6 @@
 
 ArgDevice::ArgDevice(bool logging) {
   this->logging = logging;
-
-  Args args;
-
-  args.command = "NULLCOMMAND";
-
-  Arg* arg = new Arg[1];
-  arg[0].v = "NULLARG";
-  args.args = arg;
-
-  args.amount = 0;
-
-  this->NULLARGS = args;
 }
 
 void ArgDevice::begin() {
@@ -77,7 +65,6 @@ inline String ArgDevice::getBuffer(String buffer) {
 String buffer = "";
 Args ArgDevice::receiveArgs() {
   if((recv->available() && recv->peek() == startOfTransmission)) {
-    logItem("Message recieved");
 
     String trueBuffer = "";
     while(buffer.charAt(buffer.length() - 3) != endOfTransmission) {
@@ -87,6 +74,7 @@ Args ArgDevice::receiveArgs() {
 
     logItem("Message recieved.");
     Args args;
+    args.amount = 0;
 
     logItem("Getting command...");
     int lastEnd = findFrom(' ', 0, buffer);

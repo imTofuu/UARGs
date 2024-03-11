@@ -31,7 +31,11 @@ public:
   //Set whether logs are sent through the computer port to be seen in the serial monitor.
   ArgDevice(bool logging);
 
-  const Args NULLARGS;
+  const Args NULLARGS = {
+    "NULLCOMMAND",
+    &nullarghelper,
+    0
+  };
 
   //Uses Serial1 for sending and receiving
   void begin();
@@ -52,6 +56,7 @@ public:
 private:
   HardwareSerial *send, *recv;
   bool logging;
+  Arg nullarghelper = {"NULLARG"};
 
   int findFrom(char character, int start, String string);
   String readChunk(String string, int start, int end);

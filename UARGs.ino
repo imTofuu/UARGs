@@ -1,20 +1,18 @@
 #include "ArgDevice.hpp"
 
-ArgDevice device(true);
+ArgDevice device(false);
 
 void setup() {
 
   device.begin();
 
   //delay(1000);
-  //device.sendArgs("command arg arg2");
+  //device.sendArgs("i lovemygirlfriend");
 }
 void loop() {
-
   Args args = device.receiveArgs();
   if(args.amount > 0) {
-    Serial.println("notnull");
     Serial.println(args.command);
-    Serial.println(device.getArg(&args, 1).v);
+    Serial.println(device.getArg(&args, 0).v);
   }
 }
