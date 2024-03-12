@@ -28,6 +28,8 @@ To use classes and functions in the library, you must first include the correct 
 
 ### Setup
 
+~~Examples of code can be found in [UARGs/examples]()~~ (not in version 1.0.0).
+
 #### Creation
 
 This library uses `ArgDevice` objects to read and send messages. There are two different ways to create an `ArgDevice`:
@@ -48,6 +50,8 @@ This library uses `ArgDevice` objects to read and send messages. There are two d
     This should not be used in version 1.0.0 as the logging will never be read, making the available buffer size always 0. This should be changed in version 1.0.1.
 
 #### Begin
+
+**Once the device has been begun, do not begin any of the serial ports in use. This may change the baud rate of the port and make the data unusable.**
 
 The `ArgDevice` must also be begun in the setup function. There are multiple ways to do this:
 
