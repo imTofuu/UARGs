@@ -28,9 +28,13 @@ void ArgDevice::begin(HardwareSerial *send, HardwareSerial *recv) {
   recv->begin(115200);
 }
 
+void ArgDevice::update() {
+  commandListener.dispatchEvents(receiveArgs());
+}
+
 inline void ArgDevice::logItem(String s) {
   if(logging) {
-    Serial.println(s);
+    Serial.println(log + s);
   }
 }
 
@@ -68,8 +72,10 @@ Args ArgDevice::receiveArgs() {
 
     String trueBuffer = "";
     while(buffer.charAt(buffer.length() - 3) != endOfTransmission) {
+      logItem("Waiting for whole message...");
       String newBuffer = getBuffer(buffer);
       buffer = newBuffer;
+      delay(10);
     }
 
     logItem("Message recieved.");
@@ -124,6 +130,33 @@ void ArgDevice::addArg(Args *args, String string) {
   args->amount++;
 }
 
+void ArgDevice::addEventListener(String command, void (*callback)(Args)) {
+  CommandListener::RegisteredEvent *newMemory = new CommandListener::RegisteredEvent[commandListener.numRegisteredEvents + 1];
+  memcpy(newMemory, commandListener.registeredEvents, sizeof(CommandListener::RegisteredEvent) * commandListener.numRegisteredEvents);
+  newMemory[commandListener.numRegisteredEvents].command = command;
+  newMemory[commandListener.numRegisteredEvents].callback = callback;
+  free(commandListener.registeredEvents);
+
+  commandListener.registeredEvents = newMemory;
+  commandListener.numRegisteredEvents++;
+}
+
+void ArgDevice::removeEventListener(String command, void(*callback)(Args)) {
+  for(int i = 0; i < commandListener.numRegisteredEvents; i++) {
+    if(commandListener.registeredEvents[i].command == command &&
+      commandListener.registeredEvents[i].callback == callback) {
+
+        CommandListener::RegisteredEvent *newMemory = new CommandListener::RegisteredEvent[commandListener.numRegisteredEvents - 1];
+        memcpy(newMemory, commandListener.registeredEvents, sizeof(CommandListener::RegisteredEvent) * i);
+        memcpy(newMemory + (sizeof(CommandListener::RegisteredEvent) * i), commandListener.registeredEvents, 
+        (sizeof(CommandListener::RegisteredEvent) * (commandListener.numRegisteredEvents - 1)) - (sizeof(CommandListener::RegisteredEvent) * i));
+        free(commandListener.registeredEvents);
+
+        commandListener.registeredEvents = newMemory;
+      }
+  }
+}
+
 Arg ArgDevice::getArg(Args *args, int index) {
   if(index >= 0 && index < args->amount) {
     return args->args[index];
@@ -140,4 +173,12 @@ int ArgDevice::findFrom(char character, int start, String string) {
 
 String ArgDevice::readChunk(String string, int start, int end) {
   return string.substring(start, end);
+}
+
+void ArgDevice::CommandListener::dispatchEvents(Args args) {
+  for(int i = 0; i < numRegisteredEvents; i++) {
+      if(args.command == registeredEvents[i].command) {
+        registeredEvents[i].callback(args);
+      }
+  }
 }

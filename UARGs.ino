@@ -1,18 +1,16 @@
-#include "ArgDevice.hpp"
+#include "src/ArgDevice.hpp"
 
 ArgDevice device(false);
 
 void setup() {
-
   device.begin();
 
-  //delay(1000);
-  //device.sendArgs("i lovemygirlfriend");
+  device.addEventListener("http", http);
 }
 void loop() {
-  Args args = device.receiveArgs();
-  if(args.amount > 0) {
-    Serial.println(args.command);
-    Serial.println(device.getArg(&args, 0).v);
-  }
+  device.update();
+}
+
+void http(Args args) {
+  Serial.println("http");
 }
