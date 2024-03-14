@@ -124,8 +124,9 @@ void ArgDevice::addArg(Args *args, String string) {
   memcpy(newMemory, args->args, sizeof(Arg) * args->amount);
   newMemory[args->amount].v = string;
   logItem("Freeing old memory...");
-  free(args->args);
+  delete [] args->args;
 
+  logItem("Putting memory back...");
   args->args = newMemory;
   args->amount++;
 }
@@ -135,7 +136,7 @@ void ArgDevice::addEventListener(String command, void (*callback)(Args)) {
   memcpy(newMemory, commandListener.registeredEvents, sizeof(CommandListener::RegisteredEvent) * commandListener.numRegisteredEvents);
   newMemory[commandListener.numRegisteredEvents].command = command;
   newMemory[commandListener.numRegisteredEvents].callback = callback;
-  free(commandListener.registeredEvents);
+  delete [] commandListener.registeredEvents;
 
   commandListener.registeredEvents = newMemory;
   commandListener.numRegisteredEvents++;

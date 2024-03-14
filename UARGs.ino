@@ -1,9 +1,11 @@
 #include "src/ArgDevice.hpp"
 
-ArgDevice device(false);
+ArgDevice device(true);
 
 void setup() {
-  device.begin();
+  device.begin(&Serial2);
+
+  //device.sendArgs("http arg1 arg2");
 
   device.addEventListener("http", http);
 }
