@@ -1,9 +1,11 @@
 # UARGs
 Get args in an easily readable and programmable format using the UART communication protocol.
 
+Some info here may only be valid for current version. See 
+
 ### Installation
 
-All versions of this library can be downloaded from the [releases](https://github.com/imTofuu/UARGs/releases/). The latest version is [here](https://github.com/imTofuu/UARGs/releases/tag/v1.0.0). For more info on how to install the library, see [install.md](install.md).
+All versions of this library can be downloaded from the [releases](https://github.com/imTofuu/UARGs/releases/). The latest version is [here](https://github.com/imTofuu/UARGs/releases/tag/v1.0.1). For more info on how to install the library, see [install.md](install.md).
 
 ### Board Support
 
