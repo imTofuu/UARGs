@@ -89,6 +89,8 @@ void loop() {
 ```
 This does not need to be called in a loop, but no callbacks will be run until `update` is used.
 
+##### Adding
+
 To add a listener for a command, use:
 ```c++
 device.addEventListener("commandToListenFor", callback);
@@ -113,6 +115,14 @@ To get the string value of an arg, use:
 ```c++
 String arg = arg.v;
 ```
+
+##### Removing
+
+To remove a listener, use:
+```c++
+device.removeEventListener("commandToListenFor", callback);
+```
+Ensure that both the command to listen for and the callback are the same as when you added it.
 
 #### Alternative system
 

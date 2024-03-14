@@ -40,12 +40,14 @@ inline void ArgDevice::logItem(String s) {
 
 SendStatus ArgDevice::sendArgs(String s) {
   SendStatus ret = AD_OK;
+  logItem("Resetting buffer...");
   send->flush();
+  logItem("Sending message...");
   send->println(String(startOfTransmission) += s += String(endOfTransmission));
   int c = 0;
-  recv->setTimeout(10000);
+  recv->setTimeout(10);
+  logItem("Waiting for acknowledgement response...");
   while(!(recv->available() && recv->find(acknowledge))) {
-    delay(10);
     c++;
     if(c >= 500) {
       logItem("No response recieved in 5 seconds.");
@@ -140,21 +142,44 @@ void ArgDevice::addEventListener(String command, void (*callback)(Args)) {
 
   commandListener.registeredEvents = newMemory;
   commandListener.numRegisteredEvents++;
+
+  for(int i = 0; i < commandListener.numRegisteredEvents; i++) {
+    Serial.println(commandListener.registeredEvents[i].command);
+  }
 }
 
 void ArgDevice::removeEventListener(String command, void(*callback)(Args)) {
   for(int i = 0; i < commandListener.numRegisteredEvents; i++) {
     if(commandListener.registeredEvents[i].command == command &&
       commandListener.registeredEvents[i].callback == callback) {
+        logItem("found arg to delete");
 
+        logItem("Making new array");
         CommandListener::RegisteredEvent *newMemory = new CommandListener::RegisteredEvent[commandListener.numRegisteredEvents - 1];
-        memcpy(newMemory, commandListener.registeredEvents, sizeof(CommandListener::RegisteredEvent) * i);
-        memcpy(newMemory + (sizeof(CommandListener::RegisteredEvent) * i), commandListener.registeredEvents, 
-        (sizeof(CommandListener::RegisteredEvent) * (commandListener.numRegisteredEvents - 1)) - (sizeof(CommandListener::RegisteredEvent) * i));
-        free(commandListener.registeredEvents);
 
+        int index = 0;
+        for(int x = 0; x < commandListener.numRegisteredEvents; x++) {
+          if(x == i) {
+            continue;
+            if(x >= commandListener.numRegisteredEvents) break;
+          }
+          logItem("Copying item: ");
+          logItem(String(x));
+          Serial.println(commandListener.registeredEvents[x].command);
+          newMemory[index] = commandListener.registeredEvents[x];
+          index++;
+        }
+
+        logItem("Deleting old array");
+        delete [] commandListener.registeredEvents;
+
+        logItem("Assigning variable to new memory");
         commandListener.registeredEvents = newMemory;
+        commandListener.numRegisteredEvents--;
       }
+  }
+  for(int i = 0; i < commandListener.numRegisteredEvents; i++) {
+    Serial.println(commandListener.registeredEvents[i].command);
   }
 }
 

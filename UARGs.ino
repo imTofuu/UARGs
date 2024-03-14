@@ -8,6 +8,13 @@ void setup() {
   //device.sendArgs("http arg1 arg2");
 
   device.addEventListener("http", http);
+  device.addEventListener("http2", http);
+  device.addEventListener("http3", http);
+  device.addEventListener("http4", http);
+  Serial.println("startimportant");
+  device.addEventListener("http5", http);
+  Serial.println("deleting now");
+  device.removeEventListener("http", http);
 }
 void loop() {
   device.update();
