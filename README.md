@@ -1,7 +1,7 @@
 # UARGs
 Get args in an easily readable and programmable format using the UART communication protocol.
 
-Some info here may only be valid for current version. See 
+Some info here may only be valid for current version. See README.md in your version of the library or download the latest version to have valid info.
 
 ### Installation
 
