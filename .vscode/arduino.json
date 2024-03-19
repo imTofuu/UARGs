@@ -1,0 +1,8 @@
+{
+    "configuration": "cpu=atmega328",
+    "board": "arduino:avr:nano",
+    "sketch": "UARGs.ino",
+    "port": "COM5",
+    "programmer": "esptool",
+    "output": "../ArduinoOutput"
+}
