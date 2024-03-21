@@ -7,8 +7,6 @@ public:
     static Device registerDevice(HardwareSerial *port) {registerDevice(port, port);}
     static Device registerDevice(HardwareSerial *send, HardwareSerial *recv);
 private:
-    uint8_t *knownDevices;
-    uint8_t numDevices;
 
     DeviceManager();
 };
