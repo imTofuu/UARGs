@@ -1,9 +1,15 @@
 #include <Arduino.h>
 
-#define SOH (char)1
 #define STX (char)2
 #define ETX (char)3
 #define BEL (char)7
+
+#define PUBLIC 0xff
+#define REGISTER_RESPONSE 0xfe
+#define ANON_RESPONSE 0xfd
+
+#define ROK 0xff
+#define RHASH 0xfe
 
 class Device {
 public:
@@ -23,14 +29,20 @@ public:
 
     static void anonSendPacket(HardwareSerial *send, HardwareSerial *recv, const char message[8], uint8_t target);
     static const Packet anonGetPacket(HardwareSerial *send, HardwareSerial *recv, uint8_t address);
+    static const Packet anonReadPacket(HardwareSerial *recv);
     void sendPacket(Packet packet);
     void sendPacket(const char message[8], uint8_t address) {sendPacket(createPacket(message, address));}
     const Packet createPacket(const char message[8], uint8_t target);
 
     static void anonSendResponse(HardwareSerial *send, HardwareSerial *recv, Response response);
     static const Response anonGetResponse(HardwareSerial *send, HardwareSerial *recv, uint8_t address);
+    static const Response anonReadResponse(HardwareSerial *recv);
 
     const Packet getPacket();
+
+    static constexpr Packet NULLPKT = {"NULLPKT", 0x0, 0x0, 0};
+    static constexpr Response NULLRSP = {0x0, 0x0};
+
 private:
     HardwareSerial *send, *recv;
     uint8_t address;
