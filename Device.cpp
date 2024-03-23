@@ -39,12 +39,11 @@ void Device::sendPacket(Packet packet) {
 }
 
 const Device::Packet Device::getPacket() {
-    if(recv->available())
-        Serial.println(recv->peek());
     if(recv->available() && (char)recv->peek() == STX) {
 
         log("Compiling message");
         Packet packet = readPacket();
+        Serial.println(*((unsigned int*)&packet));
 
         if(packet.target == address) {
             if(packet.hash != generateHash(packet.message)) {
@@ -83,8 +82,7 @@ const Device::Packet Device::readPacket() {
         }
         buffer[i] = currentByte;
     }
-    recv->read();
-    recv->flush();
+    recv->readString();
     return *((Packet*)buffer);
 }
 
