@@ -1,7 +1,9 @@
 #include "Device.hpp"
 
-Device::Device(uint8_t address) {
-    this->address = address;
+Device::Device(uint8_t address, bool logging) {
+    this->address = address; this->logging = logging;
+    if(logging)
+        Serial.begin(115200);
 }
 
 void Device::update() {
@@ -13,16 +15,22 @@ void Device::update() {
 //------------------------------------------------------------------------------------
 
 void Device::sendPacket(Packet packet) {
+    log("Sending packet");
     send->print(STX);
     send->write((char*)&packet, sizeof(Packet));
     send->println(ETX);
+    log("Waiting for response");
     for(int i = 0; i < 500; i++) {
         delay(10);
         Response response = getResponse();
+        if(i >= 499)
+            log("Never recieved response");
         if(response.code == 0) continue;
         if(response.code == ROK) {
+            log("Response ok");
             break;
         } else {
+            log("Invalid response, trying again");
             sendPacket(createPacket(packet.message, packet.target));
             break;
         }
@@ -31,25 +39,34 @@ void Device::sendPacket(Packet packet) {
 }
 
 const Device::Packet Device::getPacket() {
-    if(recv->available() && recv->peek() == STX) {
+    if(recv->available())
+        Serial.println(recv->peek());
+    if(recv->available() && (char)recv->peek() == STX) {
 
+        log("Compiling message");
         Packet packet = readPacket();
 
-        if(packet.hash != generateHash(packet.message)) {
-            sendResponse({RHASH, packet.origin});
-            for(int i = 0; i < 500; i++) {
-                delay(10);
-                const Packet packet2 = getPacket();
-                if(packet2.origin != 0)
-                    return packet2;
-            }
-            return NULLPKT;
-        }
         if(packet.target == address) {
+            if(packet.hash != generateHash(packet.message)) {
+                log("Invalid message, asking for another one");
+                sendResponse({RHASH, packet.origin});
+                for(int i = 0; i < 500; i++) {
+                    delay(10);
+                    const Packet packet2 = getPacket();
+                    if(packet2.origin != 0)
+                        log("Got valid packet");
+                        return packet2;
+                }
+                log("Never recieved replacement packet");
+                return NULLPKT;
+            }
+            log("Valid packet recieved");
             uint8_t responseAddress = packet.origin + 128;
             sendResponse({ROK, responseAddress});
             return packet;
         }
+        log("Packet not sent to this address");
+        return NULLPKT;
     }
     recv->flush();
     return NULLPKT;
@@ -61,10 +78,12 @@ const Device::Packet Device::readPacket() {
     for(int i = 0; i < sizeof(Packet); i++) {
         char currentByte = recv->read();
         if(currentByte == ETX) {
+            recv->read();
             return NULLPKT;
         }
         buffer[i] = currentByte;
     }
+    recv->read();
     recv->flush();
     return *((Packet*)buffer);
 }
@@ -109,6 +128,11 @@ const Device::Response Device::readResponse() {
 //------------------------------------------------------------------------------------
 //Other stuff
 //------------------------------------------------------------------------------------
+
+void Device::log(String message) {
+    if(logging)
+        Serial.println(message);
+}
 
 uint32_t Device::generateHash(const char *message) {
     int hash = 0;

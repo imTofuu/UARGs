@@ -12,7 +12,8 @@
 
 class Device {
 public:
-    Device(uint8_t address);
+    Device(uint8_t address) : Device(address, false) {}
+    Device(uint8_t address, bool logging);
 
     struct Packet {
         const char* message;
@@ -45,14 +46,18 @@ public:
 
     void begin() {begin((HardwareSerial*)&Serial);}
     void begin(HardwareSerial *port) {begin(port, port);}
-    void begin(HardwareSerial *send, HardwareSerial *recv) {send->begin(57600); recv->begin(57600);}
+    void begin(HardwareSerial *send, HardwareSerial *recv) {
+        send->begin(57600); recv->begin(57600); this->send = send; this->recv = recv;
+    }
 
 private:
     HardwareSerial *send, *recv;
     uint8_t address;
+    bool logging;
 
     Packet *pending;
     uint16_t numPending;
 
+    void log(String message);
     uint32_t generateHash(const char *message);
 };

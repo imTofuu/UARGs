@@ -1,18 +1,14 @@
 #include "Device.hpp"
 
-Device device(0x1);
+Device device(/*0x1*/0x2, true);
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println("0");
-  device.begin(&Serial2);
-  Serial.println("got here2");
-  //Serial.println("here");
-  //Serial.println(device.getAddress());
-  //device.sendPacket(device.createPacket("im here", 0x2));
+  device.begin(/*&Serial2*/);
 }
 
 void loop() {
-  Serial.println("loop");
-  //Serial.println(device.getAddress());
+  //device.sendPacket(device.createPacket("im here", 0x2));
+  Device::Packet packet = device.getPacket();
+  if(packet.origin != 0)
+    Serial.println(packet.message);
 }
