@@ -1,49 +1,53 @@
 #include "Device.hpp"
 
-Device::Device(HardwareSerial *send, HardwareSerial *recv, uint8_t address) {
-    this->send = send; this ->recv = recv;
+Device::Device(uint8_t address) {
+    this->address = address;
+}
+
+void Device::update() {
+
 }
 
 //------------------------------------------------------------------------------------
-//Anonymous packets
+// Normal packets
 //------------------------------------------------------------------------------------
 
-void Device::anonSendPacket(HardwareSerial *send, HardwareSerial *recv, const char message[8], uint8_t target) {
-    Packet packet = {message, target, 0x0, sgenerateHash(message)};
+void Device::sendPacket(Packet packet) {
     send->print(STX);
     send->write((char*)&packet, sizeof(Packet));
     send->println(ETX);
     for(int i = 0; i < 500; i++) {
         delay(10);
-        Response response = anonGetResponse(send, recv, ANON_RESPONSE);
+        Response response = getResponse();
         if(response.code == 0) continue;
         if(response.code == ROK) {
             break;
         } else {
-            anonSendPacket(send, recv, message, target);
+            sendPacket(createPacket(packet.message, packet.target));
             break;
         }
     }
     send->flush();
 }
 
-const Device::Packet Device::anonGetPacket(HardwareSerial *send, HardwareSerial *recv, uint8_t address) {
+const Device::Packet Device::getPacket() {
     if(recv->available() && recv->peek() == STX) {
 
-        Packet packet = anonReadPacket(recv);
+        Packet packet = readPacket();
 
-        if(packet.hash != sgenerateHash(packet.message)) {
-            anonSendResponse(send, recv, {RHASH, packet.origin});
+        if(packet.hash != generateHash(packet.message)) {
+            sendResponse({RHASH, packet.origin});
             for(int i = 0; i < 500; i++) {
                 delay(10);
-                const Packet packet2 = anonGetPacket(send, recv, address);
+                const Packet packet2 = getPacket();
                 if(packet2.origin != 0)
                     return packet2;
             }
             return NULLPKT;
         }
         if(packet.target == address) {
-            anonSendResponse(send, recv, {ROK, packet.origin});
+            uint8_t responseAddress = packet.origin + 128;
+            sendResponse({ROK, responseAddress});
             return packet;
         }
     }
@@ -51,7 +55,7 @@ const Device::Packet Device::anonGetPacket(HardwareSerial *send, HardwareSerial 
     return NULLPKT;
 }
 
-const Device::Packet Device::anonReadPacket(HardwareSerial *recv) {
+const Device::Packet Device::readPacket() {
     recv->read();
     char buffer[sizeof(Packet)];
     for(int i = 0; i < sizeof(Packet); i++) {
@@ -65,21 +69,30 @@ const Device::Packet Device::anonReadPacket(HardwareSerial *recv) {
     return *((Packet*)buffer);
 }
 
+const Device::Packet Device::createPacket(const char message[8], uint8_t target) {
+    return Packet {message, target, address, generateHash(message)};
+}
+
 //------------------------------------------------------------------------------------
-//Anonymous responses
+//Normal responses
 //------------------------------------------------------------------------------------
 
-void Device::anonSendResponse(HardwareSerial *send, HardwareSerial *recv, Response response) {
-    send->print(STX);
+void Device::sendResponse(Response response) {
+    send->print(SOH);
     send->write((char*)&response, sizeof(Response));
-    send->println(ETX);
+    send->println(ETX);   
 }
 
-const Device::Response Device::anonGetResponse(HardwareSerial *send, HardwareSerial *recv, uint8_t address) {
-    
+const Device::Response Device::getResponse() {
+    if(recv->available() && recv->peek() == SOH) {
+        Response response = readResponse();
+        if(response.target == address + 128) 
+            return response;
+    }
+    return NULLRSP;
 }
 
-const Device::Response Device::anonReadResponse(HardwareSerial *recv) {
+const Device::Response Device::readResponse() {
     recv->read();
     char buffer[sizeof(Response)];
     for(int i = 0; i < sizeof(Response); i++) {
@@ -94,39 +107,10 @@ const Device::Response Device::anonReadResponse(HardwareSerial *recv) {
 }
 
 //------------------------------------------------------------------------------------
-// Normal packets
+//Other stuff
 //------------------------------------------------------------------------------------
 
-void Device::sendPacket(Packet packet) {
-    send->print(STX);
-    send->write((char*)&packet, sizeof(Packet));
-    send->println(ETX);
-}
-
-const Device::Packet Device::getPacket() {
-    char *buffer;
-    recv->read();
-    recv->readBytes(buffer, sizeof(Packet));
-    recv->flush();
-    Packet packet = *((Packet*)buffer);
-    if(packet.target == 0xff || packet.target == address) {
-        return packet;
-    }
-}
-
-const Device::Packet Device::createPacket(const char message[8], uint8_t target) {
-    return Packet {message, target, address, generateHash(message)};
-}
-
 uint32_t Device::generateHash(const char *message) {
-    int hash = 0;
-    for(int i = 0; i < 8; i++) {
-        hash += message[i] * pow(31, i);
-    }
-    return hash;
-}
-
-uint32_t Device::sgenerateHash(const char *message) {
     int hash = 0;
     for(int i = 0; i < 8; i++) {
         hash += message[i] * pow(31, i);
