@@ -10,13 +10,8 @@
 #define ROK 0xff
 #define RHASH 0xfe
 
-class Device {
-public:
-    Device(uint8_t address) : Device(address, false) {}
-    Device(uint8_t address, bool logging);
-
-    struct Packet {
-        const char* message;
+struct Packet {
+        const char message[6];
         uint8_t target;
         uint8_t origin;
         uint32_t hash;
@@ -27,16 +22,18 @@ public:
         uint8_t target;
     };
 
-    static constexpr Packet NULLPKT = {"NULLPKT", 0x0, 0x0, 0};
+class Device {
+public:
+    Device(uint8_t address) : Device(address, false) {}
+    Device(uint8_t address, bool logging);
+
+    static constexpr Packet NULLPKT = {"NLPKT", 0x0, 0x0, 0};
     static constexpr Response NULLRSP = {0x0, 0x0};
 
     uint8_t getAddress() {return address;}
 
-    void sendPacket(Packet packet);
-    void sendPacket(const char message[8], uint8_t address) {sendPacket(createPacket(message, address));}
-    const Packet getPacket();
-    const Packet readPacket();
-    const Packet createPacket(const char message[8], uint8_t target);
+    const uint64_t getNumericalValue(Packet packet);
+    const Packet getPacketValue(uint64_t num);
 
     void sendResponse(Response response);
     const Response getResponse();
@@ -48,7 +45,11 @@ public:
     void begin(HardwareSerial *port) {begin(port, port);}
     void begin(HardwareSerial *send, HardwareSerial *recv) {
         send->begin(57600); recv->begin(57600); this->send = send; this->recv = recv;
+        if(logging)
+            Serial.begin(57200);
     }
+
+    void sendPacket(Packet packet);
 
 private:
     HardwareSerial *send, *recv;

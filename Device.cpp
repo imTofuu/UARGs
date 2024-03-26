@@ -2,8 +2,6 @@
 
 Device::Device(uint8_t address, bool logging) {
     this->address = address; this->logging = logging;
-    if(logging)
-        Serial.begin(115200);
 }
 
 void Device::update() {
@@ -15,7 +13,25 @@ void Device::update() {
 //------------------------------------------------------------------------------------
 
 void Device::sendPacket(Packet packet) {
-    log("Sending packet");
+    send->flush();
+    send->print(STX);
+    send->flush();
+    uint64_t numValue = getNumericalValue(packet);
+    uint32_t *vals = (uint32_t*)&numValue;
+    Serial.println(vals[0], BIN);
+    Serial.println(vals[1], BIN);
+    send->write(vals[0]);
+    send->write(vals[1]);
+    send->flush();
+    send->print(ETX);
+    send->flush();
+}
+
+/*
+void Device::sendPacket(Packet packet) {
+    send->flush();
+    //Serial.println(send->availableForWrite());
+    /*log("Sending packet");
     send->print(STX);
     send->write((char*)&packet, sizeof(Packet));
     send->println(ETX);
@@ -89,6 +105,32 @@ const Device::Packet Device::readPacket() {
 const Device::Packet Device::createPacket(const char message[8], uint8_t target) {
     return Packet {message, target, address, generateHash(message)};
 }
+*/
+const uint64_t Device::getNumericalValue(Packet packet) {
+    uint64_t num = 0;
+
+    for(int i = 0; i < 6; i++) {
+        uint64_t shiftedNum = (uint64_t)(packet.message[i]) << (56 - (i * 8));
+        num += shiftedNum;
+    }
+    uint64_t shiftedTarget = (uint64_t)((packet.target & 127)) << 9;
+    num += shiftedTarget;
+    uint64_t shiftedOrigin = (uint64_t)((packet.origin & 127)) << 2;
+    num += shiftedOrigin;
+
+    return num;
+}
+
+const Packet Device::getPacketValue(uint64_t num) {
+    return Packet {{
+        (char)((num & 18374686479671623680) >> 56),
+        (char)((num & 71776119061217280) >> 48),
+        (char)((num & 280375465082880) >> 40),
+        (char)((num & 1095216660480) >> 32),
+        (char)((num & 4278190080) >> 24),
+        (char)((num & 16711680) >> 16)
+    }, (uint8_t)((num & 65024) >> 9), (uint8_t)((num & 508) >> 2), 0};
+}
 
 //------------------------------------------------------------------------------------
 //Normal responses
@@ -100,7 +142,7 @@ void Device::sendResponse(Response response) {
     send->println(ETX);   
 }
 
-const Device::Response Device::getResponse() {
+const Response Device::getResponse() {
     if(recv->available() && recv->peek() == SOH) {
         Response response = readResponse();
         if(response.target == address + 128) 
@@ -109,7 +151,7 @@ const Device::Response Device::getResponse() {
     return NULLRSP;
 }
 
-const Device::Response Device::readResponse() {
+const Response Device::readResponse() {
     recv->read();
     char buffer[sizeof(Response)];
     for(int i = 0; i < sizeof(Response); i++) {
