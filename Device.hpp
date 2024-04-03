@@ -26,7 +26,8 @@ class Device {
 public:
     class Message {
     public:
-        Message(void* data, uint8_t dataLen, uint8_t target, Device *origin);
+        Message(char *data, uint8_t dataLen, uint8_t target, Device *origin);
+        ~Message();
 
         bool sendNext();
 
@@ -43,7 +44,7 @@ public:
 
     };
 
-    Device(uint8_t address) : Device(address, false) {}
+    Device(uint8_t address);
     Device(uint8_t address, bool logging);
 
     uint8_t getAddress() {return address;}
@@ -59,7 +60,7 @@ public:
 
     bool sendMessage(Message message);
 
-    Message createMessage(void *data, uint8_t dataLen, uint16_t port);
+    Message createMessage(void *data, uint8_t dataLen, uint8_t to);
 
     uint16_t openPort(uint8_t with);
 protected:
@@ -78,5 +79,8 @@ private:
     std::vector<char> unfinished;
 
     void log(String message);
+    void lognnl(String message);
+    void logi(int val);
+
     uint32_t generateHash(const char *message);
 };

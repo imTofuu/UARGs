@@ -1,10 +1,15 @@
 #include "Device.hpp"
 
-Device::Message::Message(void* data, uint8_t dataLen, const uint8_t port, Device *origin) {
-    this->data = reinterpret_cast<char*>(data);
+Device::Message::Message(char *data, uint8_t dataLen, const uint8_t port, Device *origin) {
+    this->data = new char[dataLen];
+    memcpy(this->data, data, dataLen);
     this->dataLen = dataLen;
     this->origin = origin;
     this->port = port;
+}
+
+Device::Message::~Message() {
+    delete [] this->data;
 }
 
 bool Device::Message::dataLeft() {
@@ -15,12 +20,23 @@ bool Device::Message::sendNext() {
     HardwareSerial *send = origin->getSend();
     uint64_t numerical = 0;
 
+    Serial.println(this->data);
+    Serial.println(data);
+
+    Serial.println(data[0]);
+
+    origin->log("Sent packet:");
+    origin->log("   Data: ");
     if(sent + 6 <= dataLen) {
         for(int i = 0; i < 6; i++) {
+            if(origin->logging)
+                Serial.print(data[sent]);
             numerical += (((uint64_t)data[sent]) << (56 - (i * 8)));
             sent++;
         }
     } else {
+        if(origin->logging)
+                Serial.print(data[sent]);
         for(int i = 0; i < dataLen - sent; i++) {
             numerical += (((uint64_t)data[sent]) << (56 - (i * 8)));
             sent++;
@@ -38,5 +54,6 @@ bool Device::Message::sendNext() {
     send->write(split[0]);
     send->flush();
     send->write(ETX);
+
     return true;
 }

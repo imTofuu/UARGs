@@ -10,7 +10,7 @@ void setup() {
 
   char message[] = "hello";
 
-  Serial.println(device.sendMessage(device.createMessage(message, sizeof(message), device.openPort(0x02))));
+  device.sendMessage(device.createMessage(message, sizeof(message), 0x02));
 }
 
 void loop() {
