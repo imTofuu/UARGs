@@ -1,27 +1,18 @@
 #include "Device.hpp"
 
-Device device(/*0x1*/0x2, true);
+Device device(0x01, true);
 
 void setup() {
-  device.begin(/*&Serial2*/);
-  Packet packet = {"hello", 134, 50, 0};
-  uint64_t packetValue = device.getNumericalValue(packet);
-  Packet packet2 = device.getPacketValue(packetValue);
-  Serial.print("message: ");
-  Serial.println(packet2.message);
-  Serial.print("target: ");
-  Serial.println(packet2.target);
-  Serial.print("origin: ");
-  Serial.println(packet2.origin);
+  device.begin();
+
+  Serial.println("");
   Serial.println("");
 
-  device.sendPacket(Packet {"hello", 1, 2, 0});
+  char message[] = "hello";
+
+  Serial.println(device.sendMessage(device.createMessage(message, sizeof(message), device.openPort(0x02))));
 }
 
 void loop() {
-  //Serial.println(device.getPacketValue(device.createPacket("hello", 0x0)), BIN);
-  //Serial.println(device.getPacketValue(device.createPacket("hello", 0x0)));
-  /*Device::Packet packet = device.getPacket();
-  if(packet.origin != 0)
-    Serial.println(packet.message);*/
+  device.update();
 }

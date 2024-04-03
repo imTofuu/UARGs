@@ -1,63 +1,81 @@
 #include <Arduino.h>
+#include <vector>
+#include <algorithm>
+#include <bits/stdc++.h>
 
 #define SOH (char)1
 #define STX (char)2
 #define ETX (char)3
 #define BEL (char)7
 
-#define PUBLIC 0xff
+#define PUBLIC 0xffff
 
-#define ROK 0xff
-#define RHASH 0xfe
+#define R_OK 0xff
+#define R_HASH 0xfe
+#define R_NRECV 0xfd
 
-struct Packet {
-        const char message[6];
-        uint8_t target;
-        uint8_t origin;
-        uint32_t hash;
-    };
+typedef struct Response {
+    uint8_t code;
+    uint8_t port;
+    uint8_t id;  
+} rsp;
 
-    struct Response {
-        uint8_t code;
-        uint8_t target;
-    };
+#define NULLRSP Response {0, 0, 0}
 
 class Device {
 public:
+    class Message {
+    public:
+        Message(void* data, uint8_t dataLen, uint8_t target, Device *origin);
+
+        bool sendNext();
+
+        bool dataLeft();
+    private:
+        uint8_t port;
+
+        uint8_t sent = 0;
+
+        Device *origin;
+
+        char* data;
+        uint8_t dataLen;
+
+    };
+
     Device(uint8_t address) : Device(address, false) {}
     Device(uint8_t address, bool logging);
 
-    static constexpr Packet NULLPKT = {"NLPKT", 0x0, 0x0, 0};
-    static constexpr Response NULLRSP = {0x0, 0x0};
-
     uint8_t getAddress() {return address;}
-
-    const uint64_t getNumericalValue(Packet packet);
-    const Packet getPacketValue(uint64_t num);
-
-    void sendResponse(Response response);
-    const Response getResponse();
-    const Response readResponse();
 
     void update();
 
     void begin() {begin((HardwareSerial*)&Serial);}
     void begin(HardwareSerial *port) {begin(port, port);}
-    void begin(HardwareSerial *send, HardwareSerial *recv) {
-        send->begin(57600); recv->begin(57600); this->send = send; this->recv = recv;
-        if(logging)
-            Serial.begin(57200);
-    }
+    void begin(HardwareSerial *send, HardwareSerial *recv);
 
-    void sendPacket(Packet packet);
+    HardwareSerial* getSend();
+    HardwareSerial* getRecv();
 
+    bool sendMessage(Message message);
+
+    Message createMessage(void *data, uint8_t dataLen, uint16_t port);
+
+    uint16_t openPort(uint8_t with);
+protected:
+
+    void sendResponse(const Response &response);
+    Response getResponse();
+    Response readResponse();
 private:
     HardwareSerial *send, *recv;
     uint8_t address;
     bool logging;
 
-    Packet *pending;
-    uint16_t numPending;
+    std::vector<Message> sending;
+    std::vector<Message> recieving;
+    std::vector<Message> recieved;
+    std::vector<char> unfinished;
 
     void log(String message);
     uint32_t generateHash(const char *message);
